@@ -1,41 +1,48 @@
 import React, { useState, useEffect } from "react";
 import Board from "./Components/Board";
 import { Directions } from "./Util/Enums";
+import randomColor from "randomcolor";
 
 const width = 21;
 
 function App() {
-  const [position, setPosition] = useState({
-    x: Math.floor(width / 2),
-    y: Math.floor(width / 2)
+  const [player, setPlayer] = useState({
+    x: Math.floor(Math.random() * width),
+    y: Math.floor(Math.random() * width),
+    color: randomColor(),
+    direction: Directions.NORTH
   });
-
-  const [direction, setDirection] = useState(Directions.NORTH);
 
   useEffect(() => {
     const moveHandler = e => {
       switch (e.key) {
         case "ArrowUp":
-          setPosition({ x: position.x, y: Math.max(0, position.y - 1) });
-          setDirection(Directions.NORTH);
+          setPlayer({
+            ...player,
+            y: Math.max(0, player.y - 1),
+            direction: Directions.NORTH
+          });
           break;
         case "ArrowDown":
-          setPosition({
-            x: position.x,
-            y: Math.min(width - 1, position.y + 1)
+          setPlayer({
+            ...player,
+            y: Math.min(width - 1, player.y + 1),
+            direction: Directions.SOUTH
           });
-          setDirection(Directions.SOUTH);
           break;
         case "ArrowLeft":
-          setPosition({ x: Math.max(0, position.x - 1), y: position.y });
-          setDirection(Directions.WEST);
+          setPlayer({
+            ...player,
+            x: Math.max(0, player.x - 1),
+            direction: Directions.WEST
+          });
           break;
         case "ArrowRight":
-          setPosition({
-            x: Math.min(width - 1, position.x + 1),
-            y: position.y
+          setPlayer({
+            ...player,
+            x: Math.min(width - 1, player.x + 1),
+            direction: Directions.EAST
           });
-          setDirection(Directions.EAST);
           break;
         default:
           break;
@@ -47,8 +54,8 @@ function App() {
     return () => {
       document.removeEventListener("keydown", moveHandler);
     };
-  }, [position, direction]);
-  return <Board {...{ width, position, direction }} />;
+  }, [player]);
+  return <Board {...{ width, player }} />;
 }
 
 export default App;
