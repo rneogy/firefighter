@@ -17,13 +17,17 @@ const RowContainer = styled.div`
   align-items: center;
 `;
 
-function Board({ width, position }) {
+function Board({ width, position, direction }) {
   return (
     <BoardContainer>
       {[...Array(width)].map((_, y) => (
         <RowContainer key={y}>
           {[...Array(width)].map((_, x) => (
-            <Tile key={x} isPlayer={x === position.x && y === position.y} />
+            <Tile
+              key={x}
+              isPlayer={x === position.x && y === position.y}
+              direction={direction}
+            />
           ))}
         </RowContainer>
       ))}

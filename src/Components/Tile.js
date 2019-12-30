@@ -6,11 +6,18 @@ const StyledTile = styled.div`
   height: 20px;
   margin: 2px;
   padding: 0;
-  background-color: ${props => (props.isPlayer ? "#475ead" : "#d5dbf0")};
+  background-color: #d5dbf0;
 `;
 
-function Tile({ isPlayer }) {
-  return <StyledTile isPlayer={isPlayer} />;
+const PlayerTile = styled(StyledTile)`
+  background-color: #475ead;
+`;
+
+function Tile({ isPlayer, direction }) {
+  if (isPlayer) {
+    return <PlayerTile direction={direction} />;
+  }
+  return <StyledTile />;
 }
 
 export default Tile;
