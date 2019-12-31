@@ -11,21 +11,21 @@ const StyledTile = styled.div`
 `;
 
 const PlayerTile = styled(StyledTile)`
-  background-color: #475ead;
+  background-color: ${props => props.color};
   box-sizing: border-box;
   border-left: ${props =>
-    props.direction === Directions.WEST ? "2px solid red" : "none"};
+    props.direction === Directions.WEST ? "3px solid orange" : "none"};
   border-top: ${props =>
-    props.direction === Directions.NORTH ? "2px solid red" : "none"};
+    props.direction === Directions.NORTH ? "3px solid orange" : "none"};
   border-right: ${props =>
-    props.direction === Directions.EAST ? "2px solid red" : "none"};
+    props.direction === Directions.EAST ? "3px solid orange" : "none"};
   border-bottom: ${props =>
-    props.direction === Directions.SOUTH ? "2px solid red" : "none"};
+    props.direction === Directions.SOUTH ? "3px solid orange" : "none"};
 `;
 
-function Tile({ isPlayer, direction }) {
+function Tile({ isPlayer, player }) {
   if (isPlayer) {
-    return <PlayerTile direction={direction} />;
+    return <PlayerTile direction={player.direction} color={player.color} />;
   }
   return <StyledTile />;
 }

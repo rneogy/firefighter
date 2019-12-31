@@ -1,48 +1,32 @@
 import React, { useState, useEffect } from "react";
 import Board from "./Components/Board";
 import { Directions } from "./Util/Enums";
-import randomColor from "randomcolor";
+import io from "socket.io-client";
 
-const width = 21;
+const width = 31;
 
 function App() {
-  const [player, setPlayer] = useState({
-    x: Math.floor(Math.random() * width),
-    y: Math.floor(Math.random() * width),
-    color: randomColor(),
-    direction: Directions.NORTH
-  });
+  const [playerId, setId] = useState();
+  const [gameState, setGameState] = useState({});
 
   useEffect(() => {
+    const socket = io("localhost:3000");
+    socket.on("connect", () => setId(socket.id));
+    socket.on("update", setGameState);
+
     const moveHandler = e => {
       switch (e.key) {
         case "ArrowUp":
-          setPlayer({
-            ...player,
-            y: Math.max(0, player.y - 1),
-            direction: Directions.NORTH
-          });
+          socket.emit("move", Directions.NORTH);
           break;
         case "ArrowDown":
-          setPlayer({
-            ...player,
-            y: Math.min(width - 1, player.y + 1),
-            direction: Directions.SOUTH
-          });
+          socket.emit("move", Directions.SOUTH);
           break;
         case "ArrowLeft":
-          setPlayer({
-            ...player,
-            x: Math.max(0, player.x - 1),
-            direction: Directions.WEST
-          });
+          socket.emit("move", Directions.WEST);
           break;
         case "ArrowRight":
-          setPlayer({
-            ...player,
-            x: Math.min(width - 1, player.x + 1),
-            direction: Directions.EAST
-          });
+          socket.emit("move", Directions.EAST);
           break;
         default:
           break;
@@ -54,8 +38,9 @@ function App() {
     return () => {
       document.removeEventListener("keydown", moveHandler);
     };
-  }, [player]);
-  return <Board {...{ width, player }} />;
+  }, []);
+
+  return <Board {...{ width, gameState, playerId }} />;
 }
 
 export default App;

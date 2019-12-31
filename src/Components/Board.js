@@ -17,16 +17,20 @@ const RowContainer = styled.div`
   align-items: center;
 `;
 
-function Board({ width, player }) {
+function Board({ width, gameState }) {
   return (
     <BoardContainer>
       {[...Array(width)].map((_, y) => (
         <RowContainer key={y}>
           {[...Array(width)].map((_, x) => {
-            const isPlayer = x === player.x && y === player.y;
-            return (
-              <Tile key={x} isPlayer={isPlayer} direction={player.direction} />
-            );
+            for (const id in gameState) {
+              const player = gameState[id];
+              const isPlayer = x === player.x && y === player.y;
+              if (isPlayer) {
+                return <Tile key={x} isPlayer={isPlayer} player={player} />;
+              }
+            }
+            return <Tile key={x} isPlayer={false} />;
           })}
         </RowContainer>
       ))}
