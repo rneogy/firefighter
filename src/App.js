@@ -7,12 +7,12 @@ const width = 31;
 
 function App() {
   const [playerId, setId] = useState();
-  const [gameState, setGameState] = useState({});
+  const [boardState, setBoardState] = useState([]);
 
   useEffect(() => {
     const socket = io("localhost:3000");
     socket.on("connect", () => setId(socket.id));
-    socket.on("update", setGameState);
+    socket.on("update", setBoardState);
 
     const moveHandler = e => {
       switch (e.key) {
@@ -40,7 +40,7 @@ function App() {
     };
   }, []);
 
-  return <Board {...{ width, gameState, playerId }} />;
+  return <Board {...{ width, boardState, playerId }} />;
 }
 
 export default App;

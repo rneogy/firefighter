@@ -23,9 +23,9 @@ const PlayerTile = styled(StyledTile)`
     props.direction === Directions.SOUTH ? "3px solid orange" : "none"};
 `;
 
-function Tile({ isPlayer, player }) {
-  if (isPlayer) {
-    return <PlayerTile direction={player.direction} color={player.color} />;
+function Tile({ tile }) {
+  if (tile) {
+    return <PlayerTile direction={tile.direction} color={tile.color} />;
   }
   return <StyledTile />;
 }

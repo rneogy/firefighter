@@ -10,8 +10,15 @@ const publicPath = path.resolve(__dirname, "..", "build");
 
 app.use(express.static(publicPath));
 
-const state = {};
 const width = 31;
+const state = {
+  board: Array(width)
+    .fill()
+    .map(u => Array(width).fill(undefined)),
+  players: {}
+};
+console.log(state.board);
+
 const Directions = {
   NORTH: 0,
   EAST: 1,
@@ -22,56 +29,76 @@ const Directions = {
 io.on("connection", socket => {
   console.log(`${socket.id} connected!`);
 
-  state[socket.id] = {
-    x: Math.floor(Math.random() * width),
-    y: Math.floor(Math.random() * width),
-    color: randomColor(),
+  let startX = Math.floor(Math.random() * width);
+  let startY = Math.floor(Math.random() * width);
+  while (state.board[startY][startX]) {
+    startX = Math.floor(Math.random() * width);
+    startY = Math.floor(Math.random() * width);
+  }
+  const playerColor = randomColor();
+
+  state.players[socket.id] = {
+    x: startX,
+    y: startY,
+    color: playerColor,
     direction: Directions.NORTH
   };
-  io.emit("update", state);
+
+  state.board[startY][startX] = {
+    id: socket.id,
+    color: playerColor,
+    direction: Directions.NORTH
+  };
+
+  io.emit("update", state.board);
 
   socket.on("move", direction => {
-    const player = state[socket.id];
+    const player = state.players[socket.id];
+    let newX = player.x;
+    let newY = player.y;
     switch (direction) {
       case Directions.NORTH:
-        state[socket.id] = {
-          ...player,
-          y: Math.max(0, player.y - 1),
-          direction: Directions.NORTH
-        };
+        newY = Math.max(0, player.y - 1);
         break;
       case Directions.SOUTH:
-        state[socket.id] = {
-          ...player,
-          y: Math.min(width - 1, player.y + 1),
-          direction: Directions.SOUTH
-        };
+        newY = Math.min(width - 1, player.y + 1);
         break;
       case Directions.WEST:
-        state[socket.id] = {
-          ...player,
-          x: Math.max(0, player.x - 1),
-          direction: Directions.WEST
-        };
+        newX = Math.max(0, player.x - 1);
         break;
       case Directions.EAST:
-        state[socket.id] = {
-          ...player,
-          x: Math.min(width - 1, player.x + 1),
-          direction: Directions.EAST
-        };
+        newX = Math.min(width - 1, player.x + 1);
         break;
       default:
         break;
     }
 
-    io.emit("update", state);
+    // update player location on board
+    if (!state.board[newY][newX]) {
+      // only move if spot is empty
+      const temp = state.board[player.y][player.x];
+      temp.direction = direction;
+      state.board[player.y][player.x] = undefined;
+      state.board[newY][newX] = temp;
+
+      // update player location in player state
+      state.players[socket.id] = {
+        ...player,
+        x: newX,
+        y: newY,
+        direction
+      };
+    }
+
+    io.emit("update", state.board);
   });
 
   socket.on("disconnect", () => {
     console.log(`${socket.id} disconnected!`);
-    delete state[socket.id];
-    io.emit("update", state);
+    const player = state.players[socket.id];
+    state.board[player.y][player.x] = undefined;
+    delete state.players[socket.id];
+    io.emit("update", state.board);
   });
 });
 
