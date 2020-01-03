@@ -2,15 +2,6 @@ import React from "react";
 import styled from "styled-components";
 import Tile from "./Tile";
 
-const BoardContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #0c1124;
-`;
-
 const RowContainer = styled.div`
   display: flex;
   flex-direction: row;
@@ -19,7 +10,7 @@ const RowContainer = styled.div`
 
 function Board({ width, boardState }) {
   return (
-    <BoardContainer>
+    <>
       {boardState.map((row, y) => (
         <RowContainer key={y}>
           {row.map((tile, x) => {
@@ -27,7 +18,7 @@ function Board({ width, boardState }) {
           })}
         </RowContainer>
       ))}
-    </BoardContainer>
+    </>
   );
 }
 

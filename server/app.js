@@ -42,48 +42,49 @@ const spawnNewFood = (state, color) => {
 };
 
 io.on("connection", socket => {
-  let startX = Math.floor(Math.random() * width);
-  let startY = Math.floor(Math.random() * width);
-  while (state.board[startY][startX]) {
-    startX = Math.floor(Math.random() * width);
-    startY = Math.floor(Math.random() * width);
-  }
-  const playerColor = randomColor();
+  socket.on("start", () => {
+    let startX = Math.floor(Math.random() * width);
+    let startY = Math.floor(Math.random() * width);
+    while (state.board[startY][startX]) {
+      startX = Math.floor(Math.random() * width);
+      startY = Math.floor(Math.random() * width);
+    }
+    const playerColor = randomColor({ luminosity: "dark" });
 
-  // starting player state
-  state.players[socket.id] = {
-    coordinates: [[startX, startY]],
-    x: function() {
-      return this.coordinates[0][0];
-    },
-    y: function() {
-      return this.coordinates[0][1];
-    },
-    lastX: function() {
-      return this.coordinates[this.coordinates.length - 1][0];
-    },
-    lastY: function() {
-      return this.coordinates[this.coordinates.length - 1][1];
-    },
-    color: playerColor,
-    direction: Directions.NORTH
-  };
+    // starting player state
+    state.players[socket.id] = {
+      coordinates: [[startX, startY]],
+      x: function() {
+        return this.coordinates[0][0];
+      },
+      y: function() {
+        return this.coordinates[0][1];
+      },
+      lastX: function() {
+        return this.coordinates[this.coordinates.length - 1][0];
+      },
+      lastY: function() {
+        return this.coordinates[this.coordinates.length - 1][1];
+      },
+      color: playerColor,
+      direction: Directions.NORTH
+    };
 
-  state.board[startY][startX] = {
-    id: socket.id,
-    color: playerColor,
-    direction: Directions.NORTH,
-    obstruction: true
-  };
+    state.board[startY][startX] = {
+      id: socket.id,
+      color: playerColor,
+      direction: Directions.NORTH,
+      obstruction: true
+    };
 
-  // spawn new food for player
-  spawnNewFood(state, playerColor);
+    // spawn new food for player
+    spawnNewFood(state, playerColor);
 
-  io.emit("update", state.board);
+    io.emit("updateBoard", state.board);
+  });
 
   socket.on("move", direction => {
     const player = state.players[socket.id];
-    console.log(player.coordinates);
     let newX = player.x();
     let newY = player.y();
     switch (direction) {
@@ -111,7 +112,7 @@ io.on("connection", socket => {
       // set head in new location
       state.board[newY][newX] = {
         id: socket.id,
-        color: playerColor,
+        color: player.color,
         direction,
         obstruction: true
       };
@@ -122,7 +123,7 @@ io.on("connection", socket => {
       const coordinates = player.coordinates;
       if (newLocation && newLocation.consumable) {
         // spawn new food, don't remove last location in coordinates
-        spawnNewFood(state, playerColor);
+        spawnNewFood(state, player.color);
       } else {
         state.board[player.lastY()][player.lastX()] = undefined;
         // board state done being modified, can touch player state.
@@ -139,17 +140,20 @@ io.on("connection", socket => {
       };
     }
 
-    io.emit("update", state.board);
+    io.emit("updateBoard", state.board);
   });
 
   socket.on("disconnect", () => {
     console.log(`${socket.id} disconnected!`);
     const player = state.players[socket.id];
+    if (!player) {
+      return;
+    }
     for (const coord of player.coordinates) {
       state.board[coord[1]][coord[0]] = undefined;
     }
     delete state.players[socket.id];
-    io.emit("update", state.board);
+    io.emit("updateBoard", state.board);
   });
 });
 
