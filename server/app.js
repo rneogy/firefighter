@@ -333,6 +333,8 @@ io.on("connection", socket => {
   });
 });
 
-http.listen(3000, () => {
-  console.log(`Listening on port 3000 and looking in folder ${publicPath}`);
+const port = process.env.port || 3000;
+
+http.listen(port, () => {
+  console.log(`Listening on port ${port} and looking in folder ${publicPath}`);
 });
