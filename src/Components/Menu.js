@@ -10,11 +10,11 @@ const MenuOption = styled.h2`
   }
 `;
 
-function Menu({ startGame }) {
+function Menu({ startGame, gameOver }) {
   return (
     <>
-      <h1>Snake Shooter</h1>
-      <MenuOption onClick={startGame}>Play</MenuOption>
+      <h1>{gameOver ? "Game Over!" : "Snake Shooter"}</h1>
+      <MenuOption onClick={startGame}>Play{gameOver && " Again"}</MenuOption>
     </>
   );
 }

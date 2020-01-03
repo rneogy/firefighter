@@ -8,7 +8,7 @@ const RowContainer = styled.div`
   align-items: center;
 `;
 
-function Board({ width, boardState }) {
+function Board({ boardState }) {
   return (
     <>
       {boardState.map((row, y) => (

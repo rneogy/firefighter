@@ -5,8 +5,6 @@ import { Directions } from "./Util/Enums";
 import io from "socket.io-client";
 import styled from "styled-components";
 
-const width = 31;
-
 const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -78,12 +76,17 @@ function App() {
   let playView;
 
   switch (playState) {
-    case "menu":
-      playView = <Menu startGame={() => setPlayState("playing")} />;
-      break;
     case "playing":
+      playView = <Board {...{ boardState }} />;
+      break;
+    case "gameOver":
+      playView = (
+        <Menu startGame={() => setPlayState("playing")} gameOver={true} />
+      );
+      break;
+    case "menu":
     default:
-      playView = <Board {...{ width, boardState, playerId }} />;
+      playView = <Menu startGame={() => setPlayState("playing")} />;
   }
 
   return <AppContainer>{playView}</AppContainer>;
