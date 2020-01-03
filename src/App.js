@@ -25,7 +25,7 @@ function App() {
 
   useEffect(() => {
     // on page load
-    const socket = io("localhost:3000");
+    const socket = io();
     setSocket(socket);
     socket.on("connect", () => setId(socket.id));
     socket.on("updateBoard", setBoardState);

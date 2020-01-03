@@ -6,11 +6,18 @@ const path = require("path");
 const app = express();
 const http = require("http").Server(app);
 const io = require("socket.io")(http);
+
 const randomColor = require("randomcolor");
 
 const publicPath = path.resolve(__dirname, "..", "build");
 
 app.use(express.static(publicPath));
+
+const port = process.env.PORT || 3000;
+
+http.listen(port, () => {
+  console.log(`Listening on port ${port} and looking in folder ${publicPath}`);
+});
 
 const width = 31;
 const moveInterval = 500;
@@ -333,10 +340,4 @@ io.on("connection", socket => {
     console.log(`${socket.id} disconnected!`);
     removePlayer(socket.id);
   });
-});
-
-const port = process.env.PORT || 3000;
-
-http.listen(port, () => {
-  console.log(`Listening on port ${port} and looking in folder ${publicPath}`);
 });
