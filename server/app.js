@@ -175,6 +175,11 @@ const removePlayer = id => {
   for (const coord of player.coordinates) {
     state.board[coord[1]][coord[0]] = undefined;
   }
+  for (const bullet of player.bullets) {
+    const bulletX = bullet.location[0];
+    const bulletY = bullet.location[1];
+    state.board[bulletY][bulletX] = undefined;
+  }
   state.board[player.food[1]][player.food[0]] = undefined;
   delete state.players[id];
   io.emit("updateBoard", state.board);
