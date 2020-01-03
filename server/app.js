@@ -115,15 +115,27 @@ const movePlayer = (socket, direction) => {
   direction = direction !== undefined ? direction : player.direction;
   switch (direction) {
     case Directions.NORTH:
+      if (player.direction === Directions.SOUTH) {
+        return;
+      }
       newY = Math.max(0, newY - 1);
       break;
     case Directions.SOUTH:
+      if (player.direction === Directions.NORTH) {
+        return;
+      }
       newY = Math.min(width - 1, newY + 1);
       break;
     case Directions.WEST:
+      if (player.direction === Directions.EAST) {
+        return;
+      }
       newX = Math.max(0, newX - 1);
       break;
     case Directions.EAST:
+      if (player.direction === Directions.WEST) {
+        return;
+      }
       newX = Math.min(width - 1, newX + 1);
       break;
     default:
@@ -136,6 +148,7 @@ const movePlayer = (socket, direction) => {
   // lose if you hit an obstruction.
   if (newLocation && newLocation.obstruction) {
     removePlayer(id);
+    socket.emit("updatePlayerState", { length: 0, cause: "damage" });
     socket.emit("updatePlayState", "gameOver");
   } else {
     // set head in new location
@@ -154,6 +167,10 @@ const movePlayer = (socket, direction) => {
     if (newLocation && newLocation.consumable) {
       // spawn new food, don't remove last location in coordinates
       spawnNewFood(state, id);
+      socket.emit("updatePlayerState", {
+        length: player.coordinates.length + 1,
+        cause: "food"
+      });
     } else {
       state.board[player.lastY()][player.lastX()] = undefined;
       // board state done being modified, can touch player state.
@@ -173,14 +190,12 @@ const movePlayer = (socket, direction) => {
   io.emit("updateBoard", state.board);
 };
 
-let moveIntervalId;
-
 const removePlayer = id => {
-  clearInterval(moveIntervalId);
   const player = state.players[id];
   if (!player) {
     return;
   }
+  clearInterval(player.moveIntervalId);
   for (const coord of player.coordinates) {
     state.board[coord[1]][coord[0]] = undefined;
   }
@@ -208,8 +223,13 @@ const hitPlayer = location => {
   if (player.coordinates.length <= damage) {
     // killed the player
     removePlayer(id);
+    io.to(id).emit("updatePlayState", "gameOver");
   } else {
     cutTail(player, damage);
+    io.to(id).emit("updatePlayerState", {
+      length: player.coordinates.length,
+      cause: "damage"
+    });
   }
 };
 
@@ -273,6 +293,10 @@ const shoot = socket => {
 
     // remove tail for ammo
     cutTail(player);
+    socket.emit("updatePlayerState", {
+      length: player.coordinates.length,
+      cause: "ammo"
+    });
   }
 
   socket.emit("updateBoard", state.board);
@@ -325,7 +349,10 @@ io.on("connection", socket => {
     io.emit("updateBoard", state.board);
 
     // start movement
-    moveIntervalId = setInterval(movePlayer.bind(null, socket), moveInterval);
+    state.players[socket.id].moveIntervalId = setInterval(
+      movePlayer.bind(null, socket),
+      moveInterval
+    );
   });
 
   socket.on("move", direction => {
