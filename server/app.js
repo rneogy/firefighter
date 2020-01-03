@@ -48,12 +48,59 @@ const spawnNewFood = (state, id) => {
   };
 };
 
+const moveBullets = player => {
+  const keptBullets = [];
+  for (const i in player.bullets) {
+    const bullet = player.bullets[i];
+    let bulletX = bullet.location[0];
+    let bulletY = bullet.location[1];
+    switch (bullet.direction) {
+      case Directions.NORTH:
+        bulletY = bulletY - 2;
+        break;
+      case Directions.SOUTH:
+        bulletY = bulletY + 2;
+        break;
+      case Directions.WEST:
+        bulletX = bulletX - 2;
+        break;
+      case Directions.EAST:
+        bulletX = bulletX + 2;
+        break;
+      default:
+        break;
+    }
+
+    // remove previous bullet location from board
+    const boardBullet = state.board[bullet.location[1]][bullet.location[0]];
+    state.board[bullet.location[1]][bullet.location[0]] = undefined;
+
+    if (bulletX >= 0 && bulletX < width && bulletY >= 0 && bulletY < width) {
+      const newBulletLocation = state.board[bulletY][bulletX];
+      if (!newBulletLocation) {
+        // if empty, keep moving forward
+        state.board[bulletY][bulletX] = boardBullet;
+        bullet.location = [bulletX, bulletY];
+        keptBullets.push(bullet);
+      } else if (newBulletLocation.player) {
+        hitPlayer(newBulletLocation);
+      }
+      // get absorbed by anything else (obstructions, food, etc)
+    }
+  }
+  player.bullets = keptBullets;
+};
+
 const movePlayer = (socket, direction) => {
   const id = socket.id;
   const player = state.players[id];
   if (!player) {
     return;
   }
+
+  // move bullets before moving player
+  moveBullets(player);
+
   let newX = player.x();
   let newY = player.y();
   direction = direction !== undefined ? direction : player.direction;
@@ -87,7 +134,8 @@ const movePlayer = (socket, direction) => {
       id,
       color: player.color,
       direction,
-      obstruction: true
+      obstruction: true,
+      body: true
     };
 
     // remove head direction from body
@@ -132,15 +180,100 @@ const removePlayer = id => {
   io.emit("updateBoard", state.board);
 };
 
+const hitPlayer = location => {
+  const id = location.id;
+  const player = state.players[id];
+
+  let damage = 1;
+
+  if (location.direction !== undefined) {
+    // hit the head!
+    damage = 3;
+  }
+
+  if (player.coordinates.length <= damage) {
+    // killed the player
+    removePlayer(id);
+  } else {
+    cutTail(player, damage);
+  }
+};
+
+const cutTail = (player, cost) => {
+  cost = cost || 1;
+  for (let i = 0; i < cost; i++) {
+    state.board[player.lastY()][player.lastX()] = undefined;
+    player.coordinates.pop();
+  }
+};
+
+const shoot = socket => {
+  const player = state.players[socket.id];
+  if (player.coordinates.length <= 1) {
+    // don't let them shoot if they don't have ammo
+    return;
+  }
+  let bulletX = player.x();
+  let bulletY = player.y();
+  switch (player.direction) {
+    case Directions.NORTH:
+      bulletY = bulletY - 1;
+      break;
+    case Directions.SOUTH:
+      bulletY = bulletY + 1;
+      break;
+    case Directions.WEST:
+      bulletX = bulletX - 1;
+      break;
+    case Directions.EAST:
+      bulletX = bulletX + 1;
+      break;
+    default:
+      break;
+  }
+
+  if (bulletX >= 0 && bulletX < width && bulletY >= 0 && bulletY < width) {
+    const location = state.board[bulletY][bulletX];
+    if (location && location.body) {
+      // instant hit, do hit logic
+      hitPlayer(location);
+      // and then don't add any bullet to the screen
+      return;
+    } else if (location && location.bullet) {
+      // don't waste bullets
+      return;
+    }
+
+    // track to bullet with the player
+    player.bullets.push({
+      location: [bulletX, bulletY],
+      direction: player.direction
+    });
+
+    // add the bullet to the board
+    state.board[bulletY][bulletX] = {
+      id: player.id,
+      color: "#293233",
+      bullet: true
+    };
+
+    // remove tail for ammo
+    cutTail(player);
+  }
+
+  socket.emit("updateBoard", state.board);
+};
+
 io.on("connection", socket => {
   console.log(`${socket.id} connected!`);
 
   socket.on("start", () => {
     let startX = Math.floor(Math.random() * width);
-    let startY = Math.floor(Math.random() * width);
+    // never start users in top two rows to give some reaction time
+    let startY = Math.floor(Math.random() * (width - 2)) + 2;
     while (state.board[startY][startX]) {
       startX = Math.floor(Math.random() * width);
-      startY = Math.floor(Math.random() * width);
+      startY = Math.floor(Math.random() * (width - 2)) + 2;
     }
     const playerColor = randomColor({ luminosity: "dark" });
 
@@ -160,14 +293,16 @@ io.on("connection", socket => {
         return this.coordinates[this.coordinates.length - 1][1];
       },
       color: playerColor,
-      direction: Directions.NORTH
+      direction: Directions.NORTH,
+      bullets: []
     };
 
     state.board[startY][startX] = {
       id: socket.id,
       color: playerColor,
       direction: Directions.NORTH,
-      obstruction: true
+      obstruction: true,
+      body: true
     };
 
     // spawn new food for player
@@ -181,6 +316,10 @@ io.on("connection", socket => {
 
   socket.on("move", direction => {
     movePlayer(socket, direction);
+  });
+
+  socket.on("shoot", () => {
+    shoot(socket);
   });
 
   socket.on("disconnect", () => {

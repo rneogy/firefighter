@@ -30,46 +30,49 @@ function App() {
     socket.on("connect", () => setId(socket.id));
     socket.on("updateBoard", setBoardState);
     socket.on("updatePlayState", setPlayState);
-
-    const moveHandler = e => {
-      if (keyDown[e.key]) {
-        return;
-      }
-      keyDown[e.key] = true;
-      switch (e.key) {
-        case "ArrowUp":
-          socket.emit("move", Directions.NORTH);
-          break;
-        case "ArrowDown":
-          socket.emit("move", Directions.SOUTH);
-          break;
-        case "ArrowLeft":
-          socket.emit("move", Directions.WEST);
-          break;
-        case "ArrowRight":
-          socket.emit("move", Directions.EAST);
-          break;
-        default:
-          break;
-      }
-    };
-
-    const keyUpHandler = e => {
-      keyDown[e.key] = false;
-    };
-
-    document.addEventListener("keydown", moveHandler);
-    document.addEventListener("keyup", keyUpHandler);
-
-    return () => {
-      document.removeEventListener("keydown", moveHandler);
-      document.removeEventListener("keyup", keyUpHandler);
-    };
   }, []);
 
   useEffect(() => {
     if (playState === "playing") {
       socket.emit("start");
+
+      const moveHandler = e => {
+        if (keyDown[e.code]) {
+          return;
+        }
+        keyDown[e.code] = true;
+        switch (e.code) {
+          case "ArrowUp":
+            socket.emit("move", Directions.NORTH);
+            break;
+          case "ArrowDown":
+            socket.emit("move", Directions.SOUTH);
+            break;
+          case "ArrowLeft":
+            socket.emit("move", Directions.WEST);
+            break;
+          case "ArrowRight":
+            socket.emit("move", Directions.EAST);
+            break;
+          case "Space":
+            socket.emit("shoot");
+            break;
+          default:
+            break;
+        }
+      };
+
+      const keyUpHandler = e => {
+        keyDown[e.code] = false;
+      };
+
+      document.addEventListener("keydown", moveHandler);
+      document.addEventListener("keyup", keyUpHandler);
+
+      return () => {
+        document.removeEventListener("keydown", moveHandler);
+        document.removeEventListener("keyup", keyUpHandler);
+      };
     }
   }, [playState, socket]);
 
